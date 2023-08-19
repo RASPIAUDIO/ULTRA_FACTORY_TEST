@@ -1,0 +1,237 @@
+#!/bin/bash
+#init led & button
+echo 25 >/sys/class/gpio/export
+echo out >/sys/class/gpio/gpio25/direction
+echo 23 >/sys/class/gpio/export
+echo in >/sys/class/gpio/gpio23/direction
+#infinite loop
+while [ 1 ]
+do
+#led ON
+echo 1 >/sys/class/gpio/gpio25/value
+
+echo  "-----> Test for Raspiaudio MIC ULTRA++"
+echo  "------Please push on the Yellow button to test"
+
+
+sudo alsactl store
+#SET Config for speaker out ---start
+
+amixer sset "Headphone" 200
+amixer sset "Headphone Playback ZC" off
+amixer sset "Speaker" 150
+amixer sset "Speaker AC" 5
+amixer sset "Speaker DC" 5
+amixer sset "Speaker Playback ZC" off
+amixer sset "PCM Playback -6dB" off
+amixer sset "Mono Output Mixer Left" off
+amixer sset "Mono Output Mixer Right" off
+amixer sset "Playback" 260
+amixer sset "Capture" 0
+amixer sset "3D" 0
+amixer sset "3D Filter Lower Cut-Off" Low
+amixer sset "3D Filter Upper Cut-Off" off
+amixer sset "ADC Data Output Select" "Left Data = Left ADC; Right Data = Right ADC"
+amixer sset "ADC High Pass Filter" off
+amixer sset "ADC PCM" 190
+amixer sset "ADC Polarity" "No Inversion"
+amixer sset "ALC Attack" 0
+amixer sset "ALC Decay" 0
+amixer sset "ALC Function" "Off"
+amixer sset "ALC Hold Time" 0
+amixer sset "ALC Max Gain" 0
+amixer sset "ALC Min Gain" 0
+amixer sset "ALC Mode" "ALC"
+amixer sset "ALC Target" 0
+amixer sset "DAC Deemphasis" off
+amixer sset "DAC Mono Mix" "Stereo"
+amixer sset "DAC Polarity" "No Inversion"
+amixer sset "Left Boost Mixer LINPUT1" on
+amixer sset "Left Boost Mixer LINPUT2" off
+amixer sset "Left Boost Mixer LINPUT3" off
+amixer sset "Left Input Boost Mixer LINPUT1" 100
+amixer sset "Left Input Boost Mixer LINPUT2" 0
+amixer sset "Left Input Boost Mixer LINPUT3" 0
+amixer sset "Left Input Mixer Boost" on
+amixer sset "Left Output Mixer Boost Bypass" 0
+amixer sset "Left Output Mixer LINPUT3" 0
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Noise Gate" off
+amixer sset "Noise Gate Threshold" 0
+amixer sset "Right Boost Mixer RINPUT1" on
+amixer sset "Right Boost Mixer RINPUT2" off
+amixer sset "Right Boost Mixer RINPUT3" off
+amixer sset "Right Input Boost Mixer RINPUT1" 100
+amixer sset "Right Input Boost Mixer RINPUT2" 0
+amixer sset "Right Input Boost Mixer RINPUT3" 0
+amixer sset "Right Input Mixer Boost" on
+amixer sset "Right Output Mixer Boost Bypass" off
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Right Output Mixer RINPUT3" 0
+amixer sset "Capture" 40
+
+#SET Config for speaker out ---stop
+
+
+
+
+
+#waiting button pressed
+while [ `cat /sys/class/gpio/gpio23/value` = 1 ]; do
+set i = 1
+done
+#led OFF
+echo 0 >/sys/class/gpio/gpio25/value
+#record 5s
+
+aplay 1.wav
+arecord -d4 --rate=44000 /home/pi/test.wav&
+
+#test channels L & R
+
+aplay LeftRight.wav
+
+echo "playing the recording on speakers and headphone jack while recording from line OUT make sure you plugged jack from headphone to line"
+#play record
+
+
+#set line out recording
+amixer sset "Headphone" 200
+amixer sset "Headphone Playback ZC" off
+amixer sset "Speaker" 150
+amixer sset "Speaker AC" 5
+amixer sset "Speaker DC" 5
+amixer sset "Speaker Playback ZC" off
+amixer sset "PCM Playback -6dB" off
+amixer sset "Mono Output Mixer Left" off
+amixer sset "Mono Output Mixer Right" off
+amixer sset "Playback" 250
+amixer sset "Capture" 0
+amixer sset "3D" 0
+amixer sset "3D Filter Lower Cut-Off" Low
+amixer sset "3D Filter Upper Cut-Off" off
+amixer sset "ADC Data Output Select" "Left Data = Left ADC; Right Data = Right ADC"
+amixer sset "ADC High Pass Filter" off
+amixer sset "ADC PCM" 230
+amixer sset "ADC Polarity" "No Inversion"
+amixer sset "ALC Attack" 0
+amixer sset "ALC Decay" 0
+amixer sset "ALC Function" "Off"
+amixer sset "ALC Hold Time" 0
+amixer sset "ALC Max Gain" 0
+amixer sset "ALC Min Gain" 0
+amixer sset "ALC Mode" "ALC"
+amixer sset "ALC Target" 0
+amixer sset "DAC Deemphasis" off
+amixer sset "DAC Mono Mix" "Stereo"
+amixer sset "DAC Polarity" "No Inversion"
+amixer sset "Left Boost Mixer LINPUT1" off
+amixer sset "Left Boost Mixer LINPUT2" off
+amixer sset "Left Boost Mixer LINPUT3" on
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Left Input Boost Mixer LINPUT2" 0
+amixer sset "Left Input Boost Mixer LINPUT3" 7
+amixer sset "Left Input Mixer Boost" off
+amixer sset "Left Output Mixer Boost Bypass" 0
+amixer sset "Left Output Mixer LINPUT3" 0
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Noise Gate" off
+amixer sset "Noise Gate Threshold" 0
+amixer sset "Right Boost Mixer RINPUT1" off
+amixer sset "Right Boost Mixer RINPUT2" off
+amixer sset "Right Boost Mixer RINPUT3" on
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT2" 0
+amixer sset "Right Input Boost Mixer RINPUT3" 7
+amixer sset "Right Input Mixer Boost" off
+amixer sset "Right Output Mixer Boost Bypass" off
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Right Output Mixer RINPUT3" 0
+amixer sset "Capture" 40
+
+aplay 2.wav
+arecord -d4 --rate=44000 /home/pi/test_line.wav&
+aplay /home/pi/test.wav
+
+
+
+
+#----SET mic jack input
+
+amixer sset "Headphone" 100
+amixer sset "Headphone Playback ZC" off
+amixer sset "Speaker" 130
+amixer sset "Speaker AC" 5
+amixer sset "Speaker DC" 5
+amixer sset "Speaker Playback ZC" off
+amixer sset "PCM Playback -6dB" off
+amixer sset "Mono Output Mixer Left" off
+amixer sset "Mono Output Mixer Right" off
+amixer sset "Playback" 250
+amixer sset "Capture" 0
+amixer sset "3D" 0
+amixer sset "3D Filter Lower Cut-Off" Low
+amixer sset "3D Filter Upper Cut-Off" off
+amixer sset "ADC Data Output Select" "Left Data = Left ADC; Right Data = Right ADC"
+amixer sset "ADC High Pass Filter" off
+amixer sset "ADC PCM" 230
+amixer sset "ADC Polarity" "No Inversion"
+amixer sset "ALC Attack" 0
+amixer sset "ALC Decay" 0
+amixer sset "ALC Function" "Off"
+amixer sset "ALC Hold Time" 0
+amixer sset "ALC Max Gain" 0
+amixer sset "ALC Min Gain" 0
+amixer sset "ALC Mode" "ALC"
+amixer sset "ALC Target" 0
+amixer sset "DAC Deemphasis" off
+amixer sset "DAC Mono Mix" "Stereo"
+amixer sset "DAC Polarity" "No Inversion"
+amixer sset "Left Boost Mixer LINPUT1" off
+amixer sset "Left Boost Mixer LINPUT2" on
+amixer sset "Left Boost Mixer LINPUT3" off
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Left Input Boost Mixer LINPUT2" 200
+amixer sset "Left Input Boost Mixer LINPUT3" 0
+amixer sset "Left Input Mixer Boost" on
+amixer sset "Left Output Mixer Boost Bypass" 0
+amixer sset "Left Output Mixer LINPUT3" 0
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Noise Gate" off
+amixer sset "Noise Gate Threshold" 0
+amixer sset "Right Boost Mixer RINPUT1" off
+amixer sset "Right Boost Mixer RINPUT2" on
+amixer sset "Right Boost Mixer RINPUT3" off
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT2" 200
+amixer sset "Right Input Boost Mixer RINPUT3" 0
+amixer sset "Right Input Mixer Boost" on
+amixer sset "Right Output Mixer Boost Bypass" off
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Right Output Mixer RINPUT3" 0
+amixer sset "Capture" 40
+
+aplay 3.wav
+echo "-Playing the recorded line out"
+aplay /home/pi/test_line.wav&
+
+arecord -d4 --rate=44000 /home/pi/test_line.wav
+
+#play mic record
+aplay 4.wav
+aplay /home/pi/test_line.wav
+
+
+
+
+
+echo "Test is done to adjust speakers volume and microphone gain run: alsamixer"
+
+
+
+
+exit
+
+done
+#echo 25 >/sys/class/gpio/unexport
+

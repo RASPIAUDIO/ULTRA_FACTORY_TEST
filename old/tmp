@@ -1,0 +1,31 @@
+
+
+cat result.txt
+#amixer sset "Speaker" 111
+#amixer sset "Playback" 200
+
+if [ "$error" != "0" ]; then
+    echo TEST FAILED Error number : $error
+	sudo echo "Bring me a coffee human" | festival --tts
+	sudo echo "Error number : $error" | festival --tts
+else
+    echo TEST PASSED!
+	sudo echo "TEST PASSED!" | festival --tts
+
+echo 25 >/sys/class/gpio/export
+echo out >/sys/class/gpio/gpio25/direction
+
+		while [ 1 ]
+		do
+			sudo echo 1 >/sys/class/gpio/gpio25/value
+			sleep 1
+			sudo echo 0 >/sys/class/gpio/gpio25/value
+			
+		done
+
+
+fi
+
+
+
+

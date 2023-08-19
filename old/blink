@@ -1,0 +1,10 @@
+echo 25 >/sys/class/gpio/export
+echo out >/sys/class/gpio/gpio25/direction
+
+		while [ 1 ]
+		do
+			sudo echo 1 >/sys/class/gpio/gpio25/value
+			sleep 0.25
+			sudo echo 0 >/sys/class/gpio/gpio25/value
+			
+		done

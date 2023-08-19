@@ -1,0 +1,395 @@
+#!/bin/bash
+#init led & button
+
+CARD_NAME='wm8960soundcard'
+
+
+echo 25 >/sys/class/gpio/export
+echo out >/sys/class/gpio/gpio25/direction
+echo 23 >/sys/class/gpio/export
+echo in >/sys/class/gpio/gpio23/direction
+#infinite loop
+while [ 1 ]
+do
+error=0
+
+
+echo  "-----> Test for Raspiaudio MIC ULTRA++"
+echo  "------Please push on the Yellow button to test"
+cd /home/rosco/ULTRAtest/
+
+#testing speaker L speaker
+#sudo alsactl store
+#SET Config for speaker out ---start
+
+#SET Config for speaker out ---stop
+echo "SET Config for speaker out "
+#led ON
+echo 1 >/sys/class/gpio/gpio25/value
+
+
+#waiting button pressed
+while [ `cat /sys/class/gpio/gpio23/value` = 1 ]; do
+set i = 1
+done
+
+
+    rm result.txt
+
+retry=0
+while [ $retry -lt 3 ]; do
+
+    bash config_speaker
+
+
+    #led OFF
+    echo 0 >/sys/class/gpio/gpio25/value
+    #record 5s
+
+
+    arecord -d3 -r 16000 recorded456.wav&
+    sleep 1
+    aplay dtmf_456.wav
+    sleep 2
+
+
+    tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+    tmp="${tmp//DTMF: }"
+    tmp="${tmp//[$'\t\r\n']}"
+
+    echo $tmp
+
+    if [ "$tmp" == "456" ]; then
+	echo "test Left speaker passed" >> result.txt
+	break
+    else
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test Left speaker failed" >> result.txt
+	    error=$((error+1))
+	fi
+    fi
+    
+done
+
+if [ $retry -lt 3 ]; then
+    retry=0
+fi
+
+
+
+while [ $retry -lt 3 ]; do
+
+#test speaker R
+amixer -c "$CARD_NAME" sset "Left Output Mixer PCM" off
+amixer -c "$CARD_NAME" sset "Right Output Mixer PCM" on
+
+
+arecord -d3 -r 16000 recorded456.wav&
+sleep 1
+aplay dtmf_456.wav
+sleep 2
+
+tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "456" ]; then
+    echo "test Right speaker passed" >> result.txt
+    break
+else
+
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test Right speaker failed" >> result.txt
+	    error=$((error+2))
+	fi
+
+
+fi
+
+done
+
+if [ $retry -lt 3 ]; then
+    retry=0
+fi
+
+
+while [ $retry -lt 3 ]; do
+
+    #test onboar MIC L
+    amixer -c "$CARD_NAME" sset "Left Output Mixer PCM" on
+    amixer -c "$CARD_NAME" sset "Right Output Mixer PCM" on
+    amixer -c "$CARD_NAME" sset "Left Input Boost Mixer LINPUT1" 120
+    amixer -c "$CARD_NAME" sset "Right Input Boost Mixer RINPUT1" 0
+
+
+    arecord -d3 -r 16000 recorded456.wav&
+    sleep 1
+    aplay dtmf_456.wav
+    sleep 2
+
+    tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+    tmp="${tmp//DTMF: }"
+    tmp="${tmp//[$'\t\r\n']}"
+    echo $tmp
+
+    if [ "$tmp" == "456" ]; then
+	echo "test onboard MIC L passed" >> result.txt
+	break
+    else
+
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test onboard MIC L failed" >> result.txt
+	    error=$((error+4))
+	fi    
+    
+    fi
+
+done
+
+
+#test onboard MIC R
+
+if [ $retry -lt 3 ]; then
+    retry=0
+fi
+
+
+
+    while [ $retry -lt 3 ]; do
+    amixer -c "$CARD_NAME" sset "Left Output Mixer PCM" on
+    amixer -c "$CARD_NAME" sset "Right Output Mixer PCM" on
+    amixer -c "$CARD_NAME" sset "Left Input Boost Mixer LINPUT1" 0
+    amixer -c "$CARD_NAME" sset "Right Input Boost Mixer RINPUT1" 100
+
+
+    arecord -d3 -r 16000 recorded456.wav&
+    sleep 1
+    aplay dtmf_456.wav
+    sleep 2
+
+    tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+    tmp="${tmp//DTMF: }"
+    tmp="${tmp//[$'\t\r\n']}"
+    echo $tmp
+
+    if [ "$tmp" == "456" ]; then
+	echo "test onboard MIC R passed" >> result.txt
+	break
+    else
+    
+    
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test onboard MIC R  failed" >> result.txt
+	    error=$((error+8))
+	fi    
+    
+    fi
+
+done
+
+
+
+
+#test LINE R
+
+
+if [ $retry -lt 3 ]; then
+    retry=0
+fi
+
+    while [ $retry -lt 3 ]; do
+    bash config_lineR
+
+
+    arecord -d3 -r 16000 recorded456.wav&
+    sleep 1
+    aplay dtmf_456.wav
+    sleep 2
+
+
+    tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+    tmp="${tmp//DTMF: }"
+    tmp="${tmp//[$'\t\r\n']}"
+    echo $tmp
+
+    if [ "$tmp" == "456" ]; then
+	echo "test external LINE R passed" >> result.txt
+	break
+    else
+    
+    
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test external LINE R  failed" >> result.txt
+	    error=$((error+16))
+	fi    
+    
+    fi
+
+done
+
+
+
+#test LINE L
+
+if [ $retry -lt 3 ]; then
+    retry=0
+fi
+    while [ $retry -lt 3 ]; do
+    bash config_lineL
+
+
+    arecord -d3 -r 16000 recorded456.wav&
+    sleep 1
+    aplay dtmf_456.wav
+    sleep 2
+
+
+
+
+    tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+    tmp="${tmp//DTMF: }"
+    tmp="${tmp//[$'\t\r\n']}"
+    echo $tmp
+
+    if [ "$tmp" == "456" ]; then
+	echo "test external LINE L passed" >> result.txt
+	break
+    else
+    
+    
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test external LINE L failed" >> result.txt
+	    error=$((error+32))
+	fi    
+    
+    fi
+
+done
+
+
+#-------------------------
+
+if [ $retry -lt 3 ]; then
+    retry=0
+fi
+
+
+    while [ $retry -lt 3 ]; do
+    bash config_extMicL
+
+    arecord -d3 -r 16000 recorded456.wav&
+    sleep 1
+    aplay dtmf_456.wav
+    sleep 2
+
+
+
+    tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+    tmp="${tmp//DTMF: }"
+    tmp="${tmp//[$'\t\r\n']}"
+    echo $tmp
+
+    if [ "$tmp" == "456" ]; then
+	echo "test MIC external L passed" >> result.txt
+	break
+    else
+    
+    
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test MIC external L failed" >> result.txt
+	    error=$((error+64))
+	fi    
+    
+    
+    fi
+    
+    done
+    
+    
+if [ $retry -lt 3 ]; then
+    retry=0
+fi
+    while [ $retry -lt 3 ]; do    
+    bash config_extMicR
+
+    arecord -d3 -r 16000 recorded456.wav&
+    sleep 1
+    aplay dtmf_456.wav
+    sleep 2
+
+    tmp=`multimon-ng -a DTMF -t wav recorded456.wav -q | uniq`
+    tmp="${tmp//DTMF: }"
+    tmp="${tmp//[$'\t\r\n']}"
+    echo $tmp
+
+    if [ "$tmp" == "456" ]; then
+	echo "test MIC external R passed" >> result.txt
+	break
+    else
+    
+    
+	retry=$((retry+1))
+
+	if [ $retry -eq 3 ]; then
+	    echo "test MIC external R failed" >> result.txt
+	    error=$((error+128))
+	fi    
+    
+    
+    fi
+done
+
+
+
+
+amixer -c "$CARD_NAME" sset "Speaker" 127
+amixer -c "$CARD_NAME" sset "Playback" 255
+amixer -c "$CARD_NAME" sset "Left Output Mixer PCM" on
+amixer -c "$CARD_NAME" sset "Left Input Mixer Boost" on
+
+
+
+cat result.txt
+
+
+if [ "$error" != "0" ]; then
+    echo TEST FAILED Error number : $error
+	sudo echo "Error number : $error" | festival --tts
+	sudo echo "Error number : $error" | festival --tts
+else
+    echo TEST PASSED!
+	sudo echo "TEST PASSED!" | festival --tts
+
+echo 25 >/sys/class/gpio/export
+echo out >/sys/class/gpio/gpio25/direction
+
+		while [ 1 ]
+		do
+			sudo echo 1 >/sys/class/gpio/gpio25/value
+			sleep 1
+			sudo echo 0 >/sys/class/gpio/gpio25/value
+			
+		done
+
+
+fi
+
+
+
+done
+

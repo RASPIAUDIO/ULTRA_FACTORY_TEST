@@ -1,0 +1,6 @@
+test Left speaker passed
+test Right speaker passed
+test onboard MIC L passed
+test onboard MIC R passed
+test external LINE R passed
+test external LINE L passed

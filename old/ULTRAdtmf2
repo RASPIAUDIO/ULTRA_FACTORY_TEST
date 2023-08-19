@@ -1,0 +1,388 @@
+#!/bin/bash
+#init led & button
+echo 25 >/sys/class/gpio/export
+echo out >/sys/class/gpio/gpio25/direction
+echo 23 >/sys/class/gpio/export
+echo in >/sys/class/gpio/gpio23/direction
+#infinite loop
+while [ 1 ]
+do
+#led ON
+echo 1 >/sys/class/gpio/gpio25/value
+
+echo  "-----> Test for Raspiaudio MIC ULTRA++"
+echo  "------Please push on the Yellow button to test"
+
+rm result.txt
+
+#testing speaker L speaker
+sudo alsactl store
+#SET Config for speaker out ---start
+
+amixer sset "Headphone" 200
+amixer sset "Headphone Playback ZC" off
+amixer sset "Speaker" 115
+amixer sset "Speaker AC" 5
+amixer sset "Speaker DC" 5
+amixer sset "Speaker Playback ZC" off
+amixer sset "PCM Playback -6dB" off
+amixer sset "Mono Output Mixer Left" off
+amixer sset "Mono Output Mixer Right" off
+amixer sset "Playback" 230
+amixer sset "Capture" 0
+amixer sset "3D" 0
+amixer sset "3D Filter Lower Cut-Off" Low
+amixer sset "3D Filter Upper Cut-Off" off
+amixer sset "ADC Data Output Select" "Left Data = Left ADC; Right Data = Right ADC"
+amixer sset "ADC High Pass Filter" off
+amixer sset "ADC PCM" 190
+amixer sset "ADC Polarity" "No Inversion"
+amixer sset "ALC Attack" 0
+amixer sset "ALC Decay" 0
+amixer sset "ALC Function" "Off"
+amixer sset "ALC Hold Time" 0
+amixer sset "ALC Max Gain" 0
+amixer sset "ALC Min Gain" 0
+amixer sset "ALC Mode" "ALC"
+amixer sset "ALC Target" 0
+amixer sset "DAC Deemphasis" off
+amixer sset "DAC Mono Mix" "Stereo"
+amixer sset "DAC Polarity" "No Inversion"
+amixer sset "Left Boost Mixer LINPUT1" on
+amixer sset "Left Boost Mixer LINPUT2" off
+amixer sset "Left Boost Mixer LINPUT3" off
+amixer sset "Left Input Boost Mixer LINPUT1" 100
+amixer sset "Left Input Boost Mixer LINPUT2" 0
+amixer sset "Left Input Boost Mixer LINPUT3" 0
+amixer sset "Left Input Mixer Boost" on
+amixer sset "Left Output Mixer Boost Bypass" 0
+amixer sset "Left Output Mixer LINPUT3" 0
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Noise Gate" off
+amixer sset "Noise Gate Threshold" 0
+amixer sset "Right Boost Mixer RINPUT1" on
+amixer sset "Right Boost Mixer RINPUT2" off
+amixer sset "Right Boost Mixer RINPUT3" off
+amixer sset "Right Input Boost Mixer RINPUT1" 100
+amixer sset "Right Input Boost Mixer RINPUT2" 0
+amixer sset "Right Input Boost Mixer RINPUT3" 0
+amixer sset "Right Input Mixer Boost" on
+amixer sset "Right Output Mixer Boost Bypass" 0
+amixer sset "Right Output Mixer PCM" off
+amixer sset "Right Output Mixer RINPUT3" 0
+amixer sset "Capture" 40
+
+#SET Config for speaker out ---stop
+
+
+#waiting button pressed
+while [ `cat /sys/class/gpio/gpio23/value` = 1 ]; do
+set i = 1
+done
+#led OFF
+echo 0 >/sys/class/gpio/gpio25/value
+#record 5s
+
+aplay dtmf_1361.wav&
+arecord -d2 --rate=16000 recorded1361.wav
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test Left speaker passed" >> result.txt
+else
+    echo "test Left speaker failed" >> result.txt
+fi
+
+
+#test speaker R
+amixer sset "Left Output Mixer PCM" off
+amixer sset "Right Output Mixer PCM" on
+
+aplay dtmf_1361.wav&
+arecord -d2 --rate=16000 recorded1361.wav
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test Right speaker passed" >> result.txt
+else
+    echo "test Right speaker failed" >> result.txt
+fi
+
+#test onboar MIC L
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Left Input Boost Mixer LINPUT1" 100
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+
+aplay dtmf_1361.wav&
+arecord -d2 --rate=16000 recorded1361.wav
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test onboard MIC L passed" >> result.txt
+else
+    echo "test onboard MIC L failed" >> result.txt
+fi
+
+
+#test onboard MIC R
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT1" 100
+
+aplay dtmf_1361.wav&
+arecord -d2 --rate=16000 recorded1361.wav
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test onboard MIC R passed" >> result.txt
+else
+    echo "test onboard MIC R failed" >> result.txt
+fi
+
+
+#test LINE R
+
+
+bash MicUltra_Input_Line_Input3
+
+#amixer sset "Left Output Mixer Boost Bypass" 0
+#amixer sset "Right Output Mixer Boost Bypass" 7
+#amixer sset "Headphone" 120
+amixer sset "Speaker" 115
+amixer sset "Left Boost Mixer LINPUT1" off
+amixer sset "Left Boost Mixer LINPUT2" off
+amixer sset "Left Boost Mixer LINPUT3" off
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Left Input Boost Mixer LINPUT2" 0
+amixer sset "Left Input Boost Mixer LINPUT3" 0
+#amixer sset "Left Output Mixer PCM" off
+#amixer sset "Left Input Mixer Boost" off
+
+amixer sset "Right Boost Mixer RINPUT1" off
+amixer sset "Right Boost Mixer RINPUT2" off
+amixer sset "Right Boost Mixer RINPUT3" on
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT2" 0
+amixer sset "Right Input Boost Mixer RINPUT3" 7
+#amixer sset "Right Output Mixer PCM" on
+#amixer sset "Right Input Mixer Boost" on
+#amixer sset "Left Output Mixer PCM" on
+
+
+
+
+
+aplay dtmf_1361.wav&
+
+
+arecord -d2 --rate=16000 recorded1361.wav
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test external LINE R passed" >> result.txt
+else
+    echo "test external LINE R failed" >> result.txt
+	cp recorded1361.wav LineRFailed.wav
+
+fi
+
+
+#test LINE L
+amixer sset "Headphone" 200
+amixer sset "Left Boost Mixer LINPUT1" off
+amixer sset "Left Boost Mixer LINPUT2" off
+amixer sset "Left Boost Mixer LINPUT3" on
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Left Input Boost Mixer LINPUT2" 0
+amixer sset "Left Input Boost Mixer LINPUT3" 7
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Left Input Mixer Boost" on
+
+amixer sset "Right Boost Mixer RINPUT1" off
+amixer sset "Right Boost Mixer RINPUT2" off
+amixer sset "Right Boost Mixer RINPUT3" off
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT2" 0
+amixer sset "Right Input Boost Mixer RINPUT3" 0
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Left Input Mixer Boost" off
+
+
+aplay dtmf_1361.wav&
+arecord -d2 --rate=16000 recorded1361.wav
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test external LINE L passed" >> result.txt
+else
+    echo "test external LINE L failed" >> result.txt
+fi
+
+
+#-------------------------
+
+
+amixer sset "Headphone" 100
+amixer sset "Headphone Playback ZC" off
+amixer sset "Speaker" 130
+amixer sset "Speaker AC" 5
+amixer sset "Speaker DC" 5
+amixer sset "Speaker Playback ZC" off
+amixer sset "PCM Playback -6dB" off
+amixer sset "Mono Output Mixer Left" off
+amixer sset "Mono Output Mixer Right" off
+amixer sset "Playback" 230
+amixer sset "Capture" 0
+amixer sset "3D" 0
+amixer sset "3D Filter Lower Cut-Off" Low
+amixer sset "3D Filter Upper Cut-Off" off
+amixer sset "ADC Data Output Select" "Left Data = Left ADC; Right Data = Right ADC"
+amixer sset "ADC High Pass Filter" off
+amixer sset "ADC PCM" 230
+amixer sset "ADC Polarity" "No Inversion"
+amixer sset "ALC Attack" 0
+amixer sset "ALC Decay" 0
+amixer sset "ALC Function" "Off"
+amixer sset "ALC Hold Time" 0
+amixer sset "ALC Max Gain" 0
+amixer sset "ALC Min Gain" 0
+amixer sset "ALC Mode" "ALC"
+amixer sset "ALC Target" 0
+amixer sset "DAC Deemphasis" off
+amixer sset "DAC Mono Mix" "Stereo"
+amixer sset "DAC Polarity" "No Inversion"
+amixer sset "Left Boost Mixer LINPUT1" off
+amixer sset "Left Boost Mixer LINPUT2" on
+amixer sset "Left Boost Mixer LINPUT3" off
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Left Input Boost Mixer LINPUT2" 200
+amixer sset "Left Input Boost Mixer LINPUT3" 0
+amixer sset "Left Input Mixer Boost" on
+amixer sset "Left Output Mixer Boost Bypass" 0
+amixer sset "Left Output Mixer LINPUT3" 0
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Noise Gate" off
+amixer sset "Noise Gate Threshold" 0
+amixer sset "Right Boost Mixer RINPUT1" off
+amixer sset "Right Boost Mixer RINPUT2" on
+amixer sset "Right Boost Mixer RINPUT3" off
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT2" 200
+amixer sset "Right Input Boost Mixer RINPUT3" 0
+amixer sset "Right Input Mixer Boost" on
+amixer sset "Right Output Mixer Boost Bypass" off
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Right Output Mixer RINPUT3" 0
+amixer sset "Capture" 40
+
+
+
+#test MIC external L
+amixer sset "Left Boost Mixer LINPUT1" off
+amixer sset "Left Boost Mixer LINPUT2" on
+amixer sset "Left Boost Mixer LINPUT3" off
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Left Input Boost Mixer LINPUT2" 200
+amixer sset "Left Input Boost Mixer LINPUT3" 0
+amixer sset "Left Output Mixer PCM" on
+amixer sset "Left Input Mixer Boost" on
+
+amixer sset "Right Boost Mixer RINPUT1" off
+amixer sset "Right Boost Mixer RINPUT2" off
+amixer sset "Right Boost Mixer RINPUT3" off
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT2" 0
+amixer sset "Right Input Boost Mixer RINPUT3" 0
+amixer sset "Right Output Mixer PCM" off
+amixer sset "Right Input Mixer Boost" off
+
+aplay dtmf_1361b.wav&
+arecord -d3 -r 16000 recorded1361.wav
+
+
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test MIC external L passed" >> result.txt
+else
+    echo "test MIC external L failed" >> result.txt
+	
+fi
+
+
+
+
+
+#test MIC external R
+amixer sset "Left Boost Mixer LINPUT1" off
+amixer sset "Left Boost Mixer LINPUT2" off
+amixer sset "Left Boost Mixer LINPUT3" off
+amixer sset "Left Input Boost Mixer LINPUT1" 0
+amixer sset "Left Input Boost Mixer LINPUT2" 0
+amixer sset "Left Input Boost Mixer LINPUT3" 0
+amixer sset "Left Output Mixer PCM" off
+amixer sset "Left Input Mixer Boost" off
+
+amixer sset "Right Boost Mixer RINPUT1" off
+amixer sset "Right Boost Mixer RINPUT2" on
+amixer sset "Right Boost Mixer RINPUT3" off
+amixer sset "Right Input Boost Mixer RINPUT1" 0
+amixer sset "Right Input Boost Mixer RINPUT2" 200
+amixer sset "Right Input Boost Mixer RINPUT3" 0
+amixer sset "Right Output Mixer PCM" on
+amixer sset "Right Input Mixer Boost" on
+
+aplay dtmf_1361b.wav&
+arecord -d3 -r 16000 recorded1361.wav
+
+
+
+tmp=`multimon-ng -a DTMF -t wav recorded1361.wav -q | uniq`
+tmp="${tmp//DTMF: }"
+tmp="${tmp//[$'\t\r\n']}"
+echo $tmp
+
+if [ "$tmp" == "1361" ]; then
+    echo "test MIC external R passed" >> result.txt
+else
+    echo "test MIC external R failed" >> result.txt
+	
+fi
+
+cat result.txt
+
+exit
+
+done
+#echo 25 >/sys/class/gpio/unexport
+
